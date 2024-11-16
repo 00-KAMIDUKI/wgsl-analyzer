@@ -1,4 +1,10 @@
-# wgsl-analyzer
+<img src="https://raw.githubusercontent.com/wgsl-analyzer/wgsl-analyzer/master/logo.svg" alt="wgsl-analyzer logo">
+
+#
+
+[![Discord](https://img.shields.io/discord/691052431525675048.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/dZJ3JTbhaU)
+
+## What wgsl-analyzer is
 
 wgsl-analyzer is a [language server](https://microsoft.github.io/language-server-protocol/) plugin for the [WGSL Shading language](https://gpuweb.github.io/gpuweb/wgsl/).
 
@@ -71,8 +77,24 @@ vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
 3. Configure the nvim lsp
 ```lua
 local lspconfig = require('lspconfig')
-lspconfig.wgsl_analyzer.setup()
+lspconfig.wgsl_analyzer.setup({})
 ```
+
+### Emacs (using lsp-mode)
+
+ - Assumes you are using wgsl-mode: https://github.com/acowley/wgsl-mode
+
+1. Install the language server 
+```sh
+cargo install --git https://github.com/wgsl-analyzer/wgsl-analyzer wgsl_analyzer
+```
+2. Add the following to your init.el
+```elisp
+(with-eval-after-load 'lsp-mode
+  (add-to-list 'lsp-language-id-configuration '(wgsl-mode . "wgsl"))
+  (lsp-register-client (make-lsp-client :new-connection (lsp-stdio-connection "wgsl_analyzer")
+                                        :activation-fn (lsp-activate-on "wgsl")
+                                        :server-id 'wgsl_analyzer)))
 
 ## Configuration
 
@@ -96,6 +118,8 @@ The vscode extension can either be built as a platform-specific extension which 
 
 Copy the server binary (either `wgsl_analyzer` or `wgsl_analyzer.exe`) into `./editors/code/out/`, then run
 `npm run package -- --target <target> -o wgsl_analyzer-<target>.vsix` where the target is one of the targets listed as [platform-specific extension targets](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#platformspecific-extensions).
+
+This can be done automatically with `cargo run --bin package -- --target linux-x64 --install`.
 
 ## Design
 

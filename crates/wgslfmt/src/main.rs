@@ -4,16 +4,17 @@ use std::{io::Read, path::PathBuf};
 
 use wgsl_formatter::FormattingOptions;
 
-const HELP_STR: &'static str = r#"wgslfmt [options] <file>...
+const HELP_STR: &str = r#"wgslfmt [options] <file>...
 
 Options:
-    --check     Run in 'check' mode. Exists with 0 if input is
-                formatted correctly. Exits with 1 and prints a diff if
-                formatting is requried.
+    --check     Run in 'check' mode. Exists with 0 if input is formatted correctly.
+                Exits with 1 and prints a diff if formatting is requried.
+    --tabs      Use tabs for indentation (instead of spaces)
 "#;
 
 struct Args {
     check: bool,
+    tab_indent: bool,
     files: Vec<PathBuf>,
 }
 
@@ -21,6 +22,7 @@ fn parse_args() -> Result<Args, lexopt::Error> {
     let mut parser = lexopt::Parser::from_env();
     let mut args = Args {
         check: false,
+        tab_indent: false,
         files: Vec::new(),
     };
 
@@ -31,6 +33,7 @@ fn parse_args() -> Result<Args, lexopt::Error> {
                 std::process::exit(0);
             }
             Long("check") => args.check = true,
+            Long("tabs") => args.tab_indent = true,
             Value(file) => args.files.push(PathBuf::from(file)),
             _ => return Err(arg.unexpected()),
         }
@@ -54,7 +57,10 @@ fn main() -> Result<(), anyhow::Error> {
             std::fs::read_to_string(&file)?
         };
 
-        let formatting_options = FormattingOptions::default();
+        let mut formatting_options = FormattingOptions::default();
+        if args.tab_indent {
+            formatting_options.indent_symbol = "\t".to_string();
+        }
         let output = wgsl_formatter::format_str(&input, &formatting_options);
 
         if args.check {
@@ -65,13 +71,11 @@ fn main() -> Result<(), anyhow::Error> {
                 println!("Diff in {}\n{}:", file.display(), diff);
                 std::process::exit(1);
             }
+        } else if is_stdin {
+            print!("{}", output);
         } else {
-            if is_stdin {
-                print!("{}", output);
-            } else {
-                std::fs::write(&file, output)
-                    .with_context(|| format!("failed to write to {}", file.display()))?;
-            }
+            std::fs::write(&file, output)
+                .with_context(|| format!("failed to write to {}", file.display()))?;
         }
     }
 
